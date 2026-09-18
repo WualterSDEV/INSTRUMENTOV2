@@ -1,1 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1117">
+<title>Instrumento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/estilo.css">
+</head>
+<body data-tema="oscuro">
 
+<div id="app">
+
+  <!-- Login -->
+  <section class="pantalla" id="p-login">
+    <div class="login">
+      <div class="marca"><i></i>Instrumento</div>
+      <h1>Análisis de partidos,<br>sin mercados de más</h1>
+      <p class="apagado">Entrá con tu cuenta para ver los partidos de hoy y tus predicciones guardadas.</p>
+      <form id="f-login" autocomplete="on">
+        <input type="email" id="correo" placeholder="Correo" autocomplete="username">
+        <input type="password" id="clave" placeholder="Contraseña" autocomplete="current-password">
+        <p class="error oculto" id="login-error"></p>
+        <button type="submit" class="btn primario">Entrar</button>
+      </form>
+      <button class="btn" id="b-invitado">Entrar como invitado</button>
+      <p class="chico apagado">Como invitado podés ver los análisis, pero no guardar predicciones.</p>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div id="principal" class="oculto">
+    <header>
+      <div class="marca"><i></i>Instrumento</div>
+      <button class="pildora" id="b-tema">claro</button>
+    </header>
+
+    <main id="vista"></main>
+
+    <nav id="tabs">
+      <button data-tab="partidos"><span>◷</span>Partidos</button>
+      <button data-tab="vivo"><span>◉</span>En vivo</button>
+      <button data-tab="combinar"><span>⧉</span>Combinar</button>
+      <button data-tab="registro"><span>☰</span>Registro</button>
+      <button data-tab="ajustes"><span>⚙</span>Ajustes</button>
+      <button data-tab="panel" class="oculto"><span>▤</span>Panel</button>
+    </nav>
+  </div>
+
+</div>
+
+<template id="t-cargando">
+  <div class="cargando">
+    <div class="esqueleto"></div>
+    <div class="esqueleto"></div>
+    <div class="esqueleto"></div>
+  </div>
+</template>
+
+<script src="/static/app.js"></script>
+<script src="/static/vistas.js"></script>
+<script src="/static/vistas2.js"></script>
+<script src="/static/panel.js"></script>
+<script src="/static/acciones.js"></script>
+</body>
+</html>
