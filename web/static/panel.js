@@ -75,9 +75,51 @@ async function verPanel() {
     ${cuerpo}`;
 }
 
+const NOMBRE_INGESTA = {
+  inicial: 'Histórico inicial', dia: 'Resultados de ayer', agenda: 'Agenda',
+};
+let ingestaReloj = null;
+
 async function panelDatos() {
-  const d = await pedir('/api/admin/estado');
-  return `<div class="lista">${d.map(e => `
+  const [d, ing] = await Promise.all([
+    pedir('/api/admin/estado'),
+    pedir('/api/admin/ingesta'),
+  ]);
+
+  clearTimeout(ingestaReloj);
+  if (ing.corriendo) {
+    ingestaReloj = setTimeout(() => {
+      if (estado.tab === 'panel' && estado.sec === 'datos') pintar();
+    }, 5000);
+  }
+
+  return `<div style="padding:16px 18px 0"><div class="tarjeta">
+      <div class="sobretitulo" style="margin-bottom:12px">Cargar datos</div>
+      ${ing.corriendo ? `
+        <div class="fila">
+          <div class="punto ojo"></div>
+          <div class="crece">Corriendo: ${esc(NOMBRE_INGESTA[ing.que] || ing.que)}</div>
+        </div>
+        <p class="chico apagado" style="margin:8px 0 0">Empezó a las
+          ${esc((ing.empezo || '').slice(11, 16))}. Podés seguir usando el
+          panel, esto corre en el servidor.</p>`
+      : `
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" data-ingesta="inicial">Histórico inicial</button>
+          <button class="btn" data-ingesta="dia">Resultados de ayer</button>
+          <button class="btn" data-ingesta="agenda">Agenda</button>
+        </div>
+        ${ing.termino ? `<p class="chico apagado" style="margin:10px 0 0">
+          Última corrida (${esc(NOMBRE_INGESTA[ing.que] || ing.que)}): ${
+            ing.error ? `error — ${esc(ing.error)}`
+                      : `${ing.resultado ?? 0} partidos, ${esc((ing.termino || '').slice(0, 16))}`
+          }</p>` : ''}
+        <p class="chico apagado" style="margin:10px 0 0">El histórico inicial
+          tarda unos 20 minutos y usa ~3.000 llamadas de la API. Si se corta,
+          volvé a correrlo: retoma donde quedó.</p>`}
+    </div></div>
+
+    <div style="padding:10px 18px 0" class="lista">${d.map(e => `
     <div class="tarjeta" style="padding:14px 16px">
       <div class="fila">
         <div class="punto ${e.ok ? 'bien' : 'ojo'}"></div>

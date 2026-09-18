@@ -166,7 +166,7 @@ def _sql(q):
 
 
 def _cursor(con):
-    return con.cursor() if ES_POSTGRES else con
+    return con.cursor()
 
 
 def crear_tablas():

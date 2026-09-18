@@ -8,6 +8,7 @@ puede deshacer. Un panel que no registra lo que tocás es un panel que
 no sirve cuando algo se rompe.
 """
 
+import threading
 from datetime import datetime
 from functools import wraps
 
@@ -15,6 +16,8 @@ from flask import Blueprint, jsonify, request
 
 import config
 from datos import almacen
+
+MODOS_INGESTA = ("inicial", "dia", "agenda")
 
 admin = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -87,6 +90,59 @@ def estado():
          "valor": str(sin_stats["n"]),
          "ok": sin_stats["n"] < 20},
     ])
+
+
+# --- Ingesta de datos -------------------------------------------------------
+# Corre en un hilo aparte: la carga inicial tarda ~20 minutos y gunicorn
+# corta la request a los 120s. El estado se guarda en la base (tabla
+# ajustes) y no en memoria, porque Render puede repartir las requests
+# entre varios workers y cada uno tiene la suya.
+def _estado_ingesta():
+    return almacen.leer_ajuste("ingesta_estado", {"corriendo": False})
+
+
+@admin.route("/ingesta", methods=["GET", "POST"])
+@solo_admin
+def ingesta():
+    if request.method == "GET":
+        return jsonify(_estado_ingesta())
+
+    modo = (request.get_json(force=True) or {}).get("modo")
+    if modo not in MODOS_INGESTA:
+        return jsonify({"error": "modo inválido: usar inicial, dia o agenda"}), 400
+    if _estado_ingesta().get("corriendo"):
+        return jsonify({"error": "ya hay una ingesta corriendo"}), 409
+
+    ahora = datetime.now().isoformat(timespec="seconds")
+    almacen.escribir_ajuste("ingesta_estado", {
+        "corriendo": True, "que": modo, "empezo": ahora,
+        "termino": None, "resultado": None, "error": None})
+
+    def _correr():
+        from datos import ingesta as mod_ingesta
+        from modelo.ajuste import reajustar_todo
+
+        try:
+            if modo == "inicial":
+                n = mod_ingesta.inicial()
+                reajustar_todo(verbose=False)
+            elif modo == "dia":
+                n = mod_ingesta.dia()
+                reajustar_todo(verbose=False)
+            else:
+                n = mod_ingesta.agenda()
+            error = None
+        except Exception as e:
+            n, error = None, str(e)[:300]
+            almacen.registrar_error("Ingesta manual falló", e, "Alta")
+
+        almacen.escribir_ajuste("ingesta_estado", {
+            "corriendo": False, "que": modo, "empezo": ahora,
+            "termino": datetime.now().isoformat(timespec="seconds"),
+            "resultado": n, "error": error})
+
+    threading.Thread(target=_correr, daemon=True).start()
+    return jsonify({"ok": True, "corriendo": True, "que": modo})
 
 
 # --- Calibración -----------------------------------------------------------

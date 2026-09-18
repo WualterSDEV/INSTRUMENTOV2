@@ -8,7 +8,8 @@ async function alClic(e) {
     '[data-favorito],[data-combi],[data-quitar-combi],[data-guardar],[data-borrar],' +
     '[data-volver],[data-contexto],[data-vivo],[data-senal],[data-fav],[data-accion],' +
     '[data-sec],[data-liga],[data-resolver],[data-deshacer],[data-publicar],' +
-    '[data-flag],[data-pedir-admin],[data-entrar-admin],[data-salir],[data-jugador]');
+    '[data-flag],[data-pedir-admin],[data-entrar-admin],[data-salir],[data-jugador],' +
+    '[data-ingesta]');
   if (!b) return;
   const d = b.dataset;
 
@@ -140,6 +141,13 @@ async function alClic(e) {
   }
   if (d.publicar) {
     await pedir(`/api/admin/versiones/${d.publicar}/publicar`, { method: 'POST' });
+    return pintar();
+  }
+  if (d.ingesta) {
+    try {
+      await pedir('/api/admin/ingesta', { method: 'POST',
+        body: JSON.stringify({ modo: d.ingesta }) });
+    } catch {}
     return pintar();
   }
 }
