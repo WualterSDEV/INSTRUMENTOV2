@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: instrumento
+    env: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --timeout 120 --workers 2
+    healthCheckPath: /salud
+    envVars:
+      # Pegar la cadena POOLED de Neon (la que dice -pooler).
+      # La direct connection funciona, pero se queda sin conexiones
+      # cuando Render levanta varios workers.
+      - key: DATABASE_URL
+        sync: false
+      - key: API_FOOTBALL_KEY
+        sync: false
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.11"
+
+  # Resultados de ayer + reajuste del modelo. 6:00 UTC: los partidos
+  # europeos de la noche anterior ya cerraron.
+  - type: cron
+    name: instrumento-diario
+    env: python
+    schedule: "0 6 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m datos.ingesta --dia && python -m modelo.ajuste --reajustar
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: API_FOOTBALL_KEY
+        sync: false
+
+  # Agenda de la semana. Una vez al día alcanza: los fixtures no cambian
+  # tanto, y así el grueso de la cuota queda para el resto.
+  - type: cron
+    name: instrumento-agenda
+    env: python
+    schedule: "30 6 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m datos.ingesta --agenda
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: API_FOOTBALL_KEY
+        sync: false
